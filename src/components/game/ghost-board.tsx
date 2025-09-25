@@ -9,10 +9,11 @@ const COLORS = [
     "hsl(0 100% 50%)",
     "hsl(39 100% 50%)",
     "hsl(240 100% 60%)",
+    "hsl(var(--muted-foreground))"
   ];
 
-const GhostCell = ({ type }: { type: number }) => {
-    const color = COLORS[type] || "transparent";
+const GhostCell = ({ type }: { type: number | string }) => {
+    const color = COLORS[Number(type)] || "transparent";
     return (
       <div
         className="aspect-square w-full h-full"
@@ -27,7 +28,7 @@ const GhostCell = ({ type }: { type: number }) => {
   };
   
 
-export const GhostBoard = ({ board }: { board: number[][] }) => {
+export const GhostBoard = ({ board }: { board: (number | string)[][] }) => {
   return (
     <div className="grid grid-cols-10 gap-px p-1 bg-background/20 border border-secondary rounded w-full max-w-[150px] aspect-[10/20] opacity-70">
       {board.map((row, y) =>

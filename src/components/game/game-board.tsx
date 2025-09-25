@@ -11,10 +11,11 @@ const COLORS = [
   "hsl(0 100% 50%)",   // Z (red)
   "hsl(39 100% 50%)",  // L (orange)
   "hsl(240 100% 60%)", // J (blue)
+  "hsl(var(--muted-foreground))" // Ghost color
 ];
 
-const Cell = ({ type }: { type: number }) => {
-  const color = COLORS[type] || "transparent";
+const Cell = ({ type }: { type: number | string }) => {
+  const color = COLORS[Number(type)] || "transparent";
   return (
     <div
       className="aspect-square w-full h-full"
@@ -28,7 +29,7 @@ const Cell = ({ type }: { type: number }) => {
   );
 };
 
-export const GameBoard = ({ board }: { board: number[][] }) => {
+export const GameBoard = ({ board }: { board: (number | string)[][] }) => {
   return (
     <div className="grid grid-cols-10 gap-px p-2 bg-card border-2 border-primary neon-box-shadow rounded-lg w-full max-w-sm aspect-[10/20]">
       {board.map((row, y) =>
