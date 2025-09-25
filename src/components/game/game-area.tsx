@@ -65,23 +65,7 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
     return false;
   };
 
-  const resetPlayer = useCallback(() => {
-    const newTetromino = nextPiece;
-    const newPlayer = {
-      pos: { x: BOARD_WIDTH / 2 - Math.floor(newTetromino.shape[0].length / 2), y: 0 },
-      tetromino: newTetromino,
-      collided: false,
-    };
-
-    if (checkCollision(newPlayer, board, { moveX: 0, moveY: 0 })) {
-      setIsGameOver(true);
-      setDropTime(null);
-    } else {
-      setPlayer(newPlayer);
-    }
-    
-    setNextPiece(getRandomTetromino());
-  }, [nextPiece, board]);
+  
 
   const startGame = useCallback(() => {
     setBoard(createEmptyBoard());
@@ -167,41 +151,53 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
   };
   
   useEffect(() => {
-    if (player.collided) {
-        const newBoard = (prevBoard: typeof board) => {
-            const newB = prevBoard.map(row => [...row]);
-            player.tetromino.shape.forEach((row, y) => {
-                row.forEach((value, x) => {
-                    if (value !== 0) {
-                        newB[y + player.pos.y][x + player.pos.x] = player.tetromino.color;
-                    }
-                });
-            });
-
-            // Check for cleared lines
-            let clearedLines = 0;
-            const unclearedRows = newB.filter(row => !row.every(cell => cell !== 0));
-            
-            clearedLines = BOARD_HEIGHT - unclearedRows.length;
-
-            if(clearedLines > 0) {
-              const newRows = Array.from({ length: clearedLines }, () => Array(BOARD_WIDTH).fill(0));
-              const finalBoard = [...newRows, ...unclearedRows];
-              
-              setLines(prev => prev + clearedLines);
-              // Basic scoring - 100 for 1, 300 for 2, 500 for 3, 800 for 4 (tetris)
-              const linePoints = [0, 100, 300, 500, 800];
-              const points = (linePoints[clearedLines] || 0) * (clearedLines === 4 ? gameConfig.score_multiplier_tetris : 1) * level;
-              setScore(prev => prev + points);
-              return finalBoard;
-            }
-            return newB;
-        };
-
-        setBoard(newBoard);
-        resetPlayer();
+    if (!player.collided) {
+      return;
     }
-  }, [player.collided, resetPlayer, gameConfig.score_multiplier_tetris, level]);
+
+    // 1. Create the new board with the collided piece.
+    const newBoard = board.map(row => [...row]);
+    player.tetromino.shape.forEach((row, y) => {
+      row.forEach((value, x) => {
+        if (value !== 0) {
+          newBoard[y + player.pos.y][x + player.pos.x] = player.tetromino.color;
+        }
+      });
+    });
+
+    // 2. Check for cleared lines and create the final board.
+    const rowsToKeep = newBoard.filter(row => row.some(cell => cell === 0));
+    const clearedLines = BOARD_HEIGHT - rowsToKeep.length;
+
+    let finalBoard = newBoard;
+    if (clearedLines > 0) {
+      const newRows = Array.from({ length: clearedLines }, () => Array(BOARD_WIDTH).fill(0));
+      finalBoard = [...newRows, ...rowsToKeep];
+      setLines(prev => prev + clearedLines);
+      const linePoints = [0, 100, 300, 500, 800];
+      const points = (linePoints[clearedLines] || 0) * (clearedLines === 4 ? gameConfig.score_multiplier_tetris : 1) * level;
+      setScore(prev => prev + points);
+    }
+
+    // 3. Reset player with the new piece, checking collision against the final board state.
+    const newTetromino = nextPiece;
+    const newPlayer = {
+      pos: { x: BOARD_WIDTH / 2 - Math.floor(newTetromino.shape[0].length / 2), y: 0 },
+      tetromino: newTetromino,
+      collided: false,
+    };
+
+    if (checkCollision(newPlayer, finalBoard, { moveX: 0, moveY: 0 })) {
+      setIsGameOver(true);
+      setDropTime(null);
+    } else {
+      setPlayer(newPlayer);
+    }
+
+    setBoard(finalBoard);
+    setNextPiece(getRandomTetromino());
+
+  }, [player.collided, board, nextPiece, gameConfig.score_multiplier_tetris, level]);
 
   useEffect(() => {
     if (!isGameOver) {
