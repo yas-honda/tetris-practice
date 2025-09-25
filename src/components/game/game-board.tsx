@@ -15,14 +15,19 @@ const COLORS = [
 ];
 
 const Cell = ({ type }: { type: number | string }) => {
-  const color = COLORS[Number(type)] || "transparent";
+  const isGhost = type === 'ghost';
+  const color = isGhost ? "hsl(var(--primary) / 0.1)" : COLORS[Number(type)] || "transparent";
+  const borderColor = isGhost ? "hsl(var(--primary) / 0.3)" : `1px solid ${color}`;
+  
   return (
     <div
       className="aspect-square w-full h-full"
       style={{
         backgroundColor: type === 0 ? "hsl(var(--background) / 0.1)" : color,
-        boxShadow: type !== 0 ? `0 0 2px ${color}, 0 0 5px ${color}, 0 0 8px ${color} inset` : "none",
-        border: type === 0 ? "1px solid hsl(var(--border) / 0.1)" : `1px solid ${color}`,
+        boxShadow: type !== 0 && !isGhost ? `0 0 2px ${color}, 0 0 5px ${color}, 0 0 8px ${color} inset` : "none",
+        border: type === 0 ? "1px solid hsl(var(--border) / 0.1)" : borderColor,
+        borderStyle: isGhost ? 'dashed' : 'solid',
+        borderWidth: isGhost ? '1px' : '1px',
         borderRadius: "2px",
       }}
     />

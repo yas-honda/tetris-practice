@@ -47,16 +47,6 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
   const [dropTime, setDropTime] = useState<number | null>(null);
 
   const gameConfig = getGameConfig();
-
-  const resetPlayer = useCallback(() => {
-    const newTetromino = nextPiece;
-    setNextPiece(getRandomTetromino());
-    setPlayer({
-      pos: { x: BOARD_WIDTH / 2 - Math.floor(newTetromino.shape[0].length / 2), y: 0 },
-      tetromino: newTetromino,
-      collided: false,
-    });
-  }, [nextPiece]);
   
   const checkCollision = (p: typeof player, b: typeof board, { moveX, moveY }: {moveX: number, moveY: number}) => {
     for (let y = 0; y < p.tetromino.shape.length; y += 1) {
@@ -75,16 +65,40 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
     return false;
   };
 
+  const resetPlayer = useCallback(() => {
+    const newTetromino = nextPiece;
+    const newPlayer = {
+      pos: { x: BOARD_WIDTH / 2 - Math.floor(newTetromino.shape[0].length / 2), y: 0 },
+      tetromino: newTetromino,
+      collided: false,
+    };
+
+    if (checkCollision(newPlayer, board, { moveX: 0, moveY: 0 })) {
+      setIsGameOver(true);
+      setDropTime(null);
+    } else {
+      setPlayer(newPlayer);
+    }
+    
+    setNextPiece(getRandomTetromino());
+  }, [nextPiece, board]);
+
   const startGame = useCallback(() => {
     setBoard(createEmptyBoard());
     setScore(0);
     setLines(0);
     setLevel(1);
-    setNextPiece(getRandomTetromino());
-    resetPlayer();
+    const newNextPiece = getRandomTetromino();
+    const firstPiece = TETROMINOS['I']; // Always start with I for predictability
+    setNextPiece(newNextPiece);
+    setPlayer({
+      pos: { x: BOARD_WIDTH / 2 - Math.floor(firstPiece.shape[0].length / 2), y: 0 },
+      tetromino: firstPiece,
+      collided: false,
+    });
     setIsGameOver(false);
     setDropTime(1000);
-  }, [resetPlayer]);
+  }, []);
 
   useEffect(() => {
     startGame();
@@ -99,21 +113,25 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
   };
 
   const drop = () => {
-    if (!checkCollision(player, board, { moveX: 0, moveY: 1 })) {
-      updatePlayerPos({ x: 0, y: 1 });
-    } else {
-      if (player.pos.y < 1) {
-        setIsGameOver(true);
-        setDropTime(null);
-        return;
+    if (!isGameOver) {
+      if (!checkCollision(player, board, { moveX: 0, moveY: 1 })) {
+        updatePlayerPos({ x: 0, y: 1 });
+      } else {
+        if (player.pos.y < 1) {
+          setIsGameOver(true);
+          setDropTime(null);
+          return;
+        }
+        updatePlayerPos({ x: 0, y: 0, collided: true });
       }
-      updatePlayerPos({ x: 0, y: 0, collided: true });
     }
   };
 
   const dropPlayer = () => {
-    setDropTime(null);
-    drop();
+    if (dropTime !== null) { // prevent multiple drops
+        setDropTime(null);
+        drop();
+    }
   };
 
   const movePlayer = (dir: -1 | 1) => {
@@ -137,7 +155,9 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
       clonedPlayer.pos.x += offset;
       offset = -(offset + (offset > 0 ? 1 : -1));
       if (offset > clonedPlayer.tetromino.shape[0].length) {
-        // undo rotation
+        // undo rotation by rotating back
+        clonedPlayer.tetromino.shape = rotate(clonedPlayer.tetromino.shape);
+        clonedPlayer.tetromino.shape = rotate(clonedPlayer.tetromino.shape);
         clonedPlayer.tetromino.shape = rotate(clonedPlayer.tetromino.shape);
         clonedPlayer.pos.x = pos;
         return;
@@ -160,21 +180,20 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
 
             // Check for cleared lines
             let clearedLines = 0;
-            for(let y = newB.length - 1; y >= 0; y--) {
-                if(newB[y].every(cell => cell !== 0)) {
-                    clearedLines++;
-                    newB.splice(y, 1);
-                }
-            }
+            const unclearedRows = newB.filter(row => !row.every(cell => cell !== 0));
+            
+            clearedLines = BOARD_HEIGHT - unclearedRows.length;
+
             if(clearedLines > 0) {
               const newRows = Array.from({ length: clearedLines }, () => Array(BOARD_WIDTH).fill(0));
-              newB.unshift(...newRows);
-
+              const finalBoard = [...newRows, ...unclearedRows];
+              
               setLines(prev => prev + clearedLines);
               // Basic scoring - 100 for 1, 300 for 2, 500 for 3, 800 for 4 (tetris)
               const linePoints = [0, 100, 300, 500, 800];
               const points = (linePoints[clearedLines] || 0) * (clearedLines === 4 ? gameConfig.score_multiplier_tetris : 1) * level;
               setScore(prev => prev + points);
+              return finalBoard;
             }
             return newB;
         };
@@ -185,12 +204,16 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
   }, [player.collided, resetPlayer, gameConfig.score_multiplier_tetris, level]);
 
   useEffect(() => {
-    const newLevel = Math.floor(lines / gameConfig.level_up_speed) + 1;
-    if (newLevel > level) {
-      setLevel(newLevel);
-      setDropTime(1000 / newLevel + 200);
+    if (!isGameOver) {
+      const newLevel = Math.floor(lines / gameConfig.level_up_speed) + 1;
+      if (newLevel > level) {
+        setLevel(newLevel);
+        setDropTime(Math.max(1000 / newLevel, 100)); // Ensure drop time doesn't get too fast
+      } else if (dropTime === null) {
+        setDropTime(Math.max(1000 / level, 100));
+      }
     }
-  }, [lines, level, gameConfig.level_up_speed]);
+  }, [lines, level, gameConfig.level_up_speed, isGameOver, dropTime]);
 
 
   useInterval(() => {
@@ -213,13 +236,20 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
         while(!checkCollision(tempPlayer, board, { moveX: 0, moveY: 1 })) {
           tempPlayer.pos.y += 1;
         }
-        setPlayer(tempPlayer);
+        updatePlayerPos({x: 0, y: tempPlayer.pos.y - player.pos.y, collided: true });
+        setDropTime(null);
       }
     }
   };
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => move({ keyCode: event.keyCode });
+    const handleKeyDown = (event: KeyboardEvent) => {
+        // prevent page scroll
+        if ([32, 37, 38, 39, 40].includes(event.keyCode)) {
+            event.preventDefault();
+        }
+        move({ keyCode: event.keyCode });
+    }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [board, player, isGameOver, playerRotate]);
@@ -255,6 +285,7 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
 
   // Combine player and board for rendering
   const displayBoard = createEmptyBoard();
+  // Draw the board
   board.forEach((row, y) => {
       row.forEach((cell, x) => {
           if (cell !== 0) {
@@ -262,6 +293,24 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
           }
       });
   });
+  // Draw the hard drop shadow
+    let shadowPlayer = JSON.parse(JSON.stringify(player));
+    while(!checkCollision(shadowPlayer, board, { moveX: 0, moveY: 1 })) {
+      shadowPlayer.pos.y += 1;
+    }
+    shadowPlayer.tetromino.shape.forEach((row, y) => {
+      row.forEach((value, x) => {
+        if (value !== 0) {
+          const boardY = y + shadowPlayer.pos.y;
+          const boardX = x + shadowPlayer.pos.x;
+          if (boardY >= 0 && boardY < BOARD_HEIGHT && boardX >= 0 && boardX < BOARD_WIDTH && displayBoard[boardY][boardX] === 0) {
+            displayBoard[boardY][boardX] = "ghost";
+          }
+        }
+      });
+    });
+
+  // Draw the player piece
   player.tetromino.shape.forEach((row, y) => {
       row.forEach((value, x) => {
           if (value !== 0) {
@@ -276,7 +325,7 @@ export default function GameArea({ gameMode }: { gameMode: "marathon" | "blitz" 
 
 
   return (
-    <div className="flex items-center justify-center w-full h-full p-4 md:p-8" role="button" tabIndex={0} onKeyDown={(e) => move(e)}>
+    <div className="flex items-center justify-center w-full h-full p-4 md:p-8" role="button" tabIndex={0} onKeyDown={(e) => move({ keyCode: e.keyCode })}>
       <GameOverDialog
         isOpen={isGameOver}
         score={score}
