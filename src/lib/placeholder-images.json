@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "avatar_1",
+      "description": "A neon blue and purple abstract avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1617280196904-8e0a4ba6ce95?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxhYnN0cmFjdCUyMG5lb258ZW58MHx8fHwxNzU4NzIwMzE4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract neon"
+    },
+    {
+      "id": "avatar_2",
+      "description": "A geometric avatar with pink and cyan lines.",
+      "imageUrl": "https://images.unsplash.com/photo-1673140927749-f55d9193dff0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxnZW9tZXRyaWMlMjBsaW5lc3xlbnwwfHx8fDE3NTg3Njc1NjN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "geometric lines"
+    },
+    {
+      "id": "avatar_3",
+      "description": "A glowing circuit board pattern avatar.",
+      "imageUrl": "https://images.unsplash.com/photo-1631375937044-6dd5beac01d2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8Y2lyY3VpdCUyMGJvYXJkfGVufDB8fHx8MTc1ODY5NDQwNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "circuit board"
+    },
+    {
+      "id": "avatar_4",
+      "description": "A pixel art skull with neon colors.",
+      "imageUrl": "https://images.unsplash.com/photo-1621458864479-295f4eebf17a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwaXhlbCUyMHNrdWxsfGVufDB8fHx8MTc1ODc2NzU2M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "pixel skull"
+    },
+    {
+      "id": "anonymous",
+      "description": "A grayed out anonymous user icon.",
+      "imageUrl": "https://images.unsplash.com/photo-1633486294753-a3f90a19e2ee?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhbm9ueW1vdXMlMjB1c2VyfGVufDB8fHx8MTc1ODc2NzU2M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "anonymous user"
+    }
+  ]
 }
